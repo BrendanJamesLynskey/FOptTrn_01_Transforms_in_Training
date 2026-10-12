@@ -1,0 +1,11 @@
+# Fourier Optics for Training 01 — Transforms in Training Workloads
+
+What the backward pass and the optimizer step do to a Fourier-domain layer, and how much of a training step a Fourier-optical transform engine could take: the 6N rule as a cross-check, the gradient of a convolution as a correlation (dU = IFFT(G·conj(H)), dH = IFFT(G·conj(U))), weight-masked against data-by-data products, block-circulant weights in training, a training-step Amdahl analysis with a live explorer, the mask rewrites every optimizer step demands, layer-major order, and an honest list of what does not map.
+
+Topics: Backward pass, Correlation, Weight gradient, Amdahl, Block-circulant, Mask rewrites.
+
+**Live site:** https://brendanjameslynskey.github.io/FOptTrn_01_Transforms_in_Training/
+
+Part of the [Fourier Optics for Training series](https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training). Every number comes from [analysis/results.md](https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md), written by [analysis/train_flop_share.py](https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/train_flop_share.py), or is computed live in the page by [js/train_flop_model.js](https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/js/train_flop_model.js), a port of the same ledger tested against the Python; illustrative coefficients are labelled on the slides. Every concept used here is explained, with links, in the [series glossary](https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#glossary). The inference version of this analysis is [Fourier Optics for Inference 02](https://brendanjameslynskey.github.io/FOptInf_02_Transforms_in_Inference_Workloads/). Sister series: [Fourier Optics for Inference](https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Inference), [Compute in Transit](https://github.com/BrendanJamesLynskey/LLM_Hub_Compute_in_Transit), [FHE Accelerator Simulators](https://github.com/BrendanJamesLynskey/FHE_Hub_Accelerator_Simulators), [Simulation Engineering Toolkit](https://github.com/BrendanJamesLynskey/SimEng_Hub_Toolkit).
+
+Licence: CC BY 4.0.

@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fourier Optics for Training 01 — Transforms in Training Workloads</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Geist+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1c1815;
+            --bg-card: #231e1a;
+            --bg-code: #2b2520;
+            --text-primary: #efe8dc;
+            --text-secondary: #a2978b;
+            --accent: #aabd59;
+            --accent-dim: #aabd5944;
+            --accent-glow: #aabd5933;
+            --border: #3a322b;
+            --font-display: 'Bricolage Grotesque', sans-serif;
+            --font-mono: 'Geist Mono', 'Geist Mono', monospace;
+            --font-body: 'Instrument Sans', sans-serif;
+            --max-width: 900px;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Header ── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .hero > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .series-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 .accent {
+            color: var(--accent);
+        }
+
+        .hero .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Tag Pills ── */
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
+            white-space: nowrap;
+        }
+
+        /* ── Pipeline Flow Bar ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            max-width: var(--max-width);
+        }
+
+        .pipeline-step {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .pipeline-arrow {
+            color: var(--accent);
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh;
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide-number {
+            font-family: var(--font-display);
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--accent-dim);
+            position: absolute;
+            top: 2rem;
+            right: 1.5rem;
+            line-height: 1;
+            user-select: none;
+        }
+
+        .slide h2 {
+            font-family: var(--font-display);
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            line-height: 1.25;
+        }
+
+        .slide h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .slide p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .slide p strong {
+            color: var(--text-primary);
+        }
+
+        .slide ul, .slide ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
+            color: var(--text-secondary);
+        }
+
+        .slide li {
+            margin-bottom: 0.4rem;
+        }
+
+        .slide li strong {
+            color: var(--text-primary);
+        }
+
+        /* ── Code Blocks ── */
+        .code-block {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.25rem 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(170,189,89,0.08);
+            padding: 0.4rem 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #dad1c5;
+        }
+
+        /* Syntax highlighting (manual) */
+        .kw { color: #de805a; }
+        .fn { color: #d7bbdf; }
+        .str { color: #bcdbd4; }
+        .cm { color: #a2978b; font-style: italic; }
+        .num { color: #97cdc6; }
+        .type { color: #e3b174; }
+        .dir { color: #de805a; }
+        .mac { color: #e3b174; }
+
+        /* ── Tables ── */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-code);
+            color: var(--accent);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: var(--font-display);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.6rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(35,30,26,0.5);
+        }
+
+        /* ── Diagrams ── */
+        .diagram-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-box {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .diagram-box.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(170,189,89,0.08);
+        }
+
+        .diagram-box.dim {
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+
+        .diagram-arrow {
+            color: var(--accent);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Vertical flow diagrams */
+        .diagram-vertical {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-vertical .diagram-arrow {
+            font-size: 1.1rem;
+        }
+
+        /* Nested hierarchy diagram */
+        .hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .hierarchy-level {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .hierarchy-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .hierarchy-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .hierarchy-item {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .hierarchy-item.accent {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(170,189,89,0.08);
+        }
+
+        /* Grid diagram */
+        .diagram-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .diagram-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .diagram-grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .diagram-panel {
+            padding: 1rem;
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .diagram-panel.accent-border {
+            border-left: 3px solid var(--accent);
+        }
+
+        .diagram-panel h4 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .diagram-panel p, .diagram-panel ul {
+            font-size: 0.85rem;
+        }
+
+        /* ── Callout Boxes ── */
+        .callout {
+            background: var(--bg-card);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 8px 8px 0;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+        }
+
+        .callout p {
+            margin-bottom: 0;
+        }
+
+        .callout .callout-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        /* ── Tier Visual ── */
+        .tier-visual {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .tier-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tier-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            min-width: 90px;
+            text-align: right;
+        }
+
+        .tier-fill {
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 0.75rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            transition: width 0.6s ease;
+        }
+
+        .tier-cost {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            min-width: 70px;
+        }
+
+        /* ── Contents list ── */
+        .contents-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: contents;
+        }
+
+        .contents-list li {
+            counter-increment: contents;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contents-list li:last-child {
+            border-bottom: none;
+        }
+
+        .contents-list li::before {
+            content: counter(contents, decimal-leading-zero);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 2rem;
+        }
+
+        .contents-list a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .contents-list a:hover {
+            color: var(--accent);
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .slide {
+                padding: 3rem 1rem;
+                min-height: auto;
+            }
+
+            .slide-number {
+                font-size: 3rem;
+                top: 1.5rem;
+                right: 1rem;
+            }
+
+            .slide h2 {
+                font-size: 1.5rem;
+            }
+
+            .diagram-grid.cols-2,
+            .diagram-grid.cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+                gap: 0.15rem;
+            }
+
+            .pipeline-step {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+
+            table {
+                font-size: 0.78rem;
+            }
+
+            .tier-label {
+                min-width: 60px;
+                font-size: 0.65rem;
+            }
+
+            .tier-fill {
+                font-size: 0.6rem;
+                height: 26px;
+            }
+        }
+
+        /* ── Interactive controls (added for Local LLM series) ── */
+        .control-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1.25rem 0;
+        }
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .control-row label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 180px;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+            min-width: 160px;
+            accent-color: var(--accent);
+        }
+        .control-row input[type="number"],
+        .control-row select {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            padding: 0.3rem 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+        .control-row .val {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--accent);
+            min-width: 80px;
+            text-align: right;
+        }
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 0.4rem 0.9rem;
+            background: var(--accent-dim);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .btn:hover { background: rgba(170,189,89,0.2); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn.secondary {
+            background: var(--bg-code);
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .result-box {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-top: 0.75rem;
+        }
+        .result-box .line-label { color: var(--text-secondary); }
+        .result-box .line-val   { color: var(--accent); font-weight: 600; }
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .metric {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            text-align: center;
+        }
+        .metric .metric-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .metric .metric-value {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            color: var(--accent);
+            font-weight: 600;
+            margin-top: 0.2rem;
+        }
+
+        /* Canvas / SVG containers */
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1.25rem 0;
+            overflow-x: auto;
+        }
+        .canvas-wrap canvas,
+        .canvas-wrap svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        /* Small inline badge */
+        .badge {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.1rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            margin-left: 0.3rem;
+        }
+        .badge.ok    { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+        .badge.warn  { border-color: #e3b174; color: #e3b174; background: rgba(227,177,116,0.08); }
+        .badge.bad   { border-color: #de805a; color: #de805a; background: rgba(222,128,90,0.08); }
+
+
+        /* ── LLM Inference Simulators additions ── */
+        .canvas-wrap canvas { image-rendering: auto; display: block; width: 100%; height: auto; }
+        .canvas-wrap svg { max-width: 100%; height: auto; }
+        .ladder { display: grid; gap: 0.4rem; margin: 1.25rem 0; }
+        .ladder-row {
+            display: grid; grid-template-columns: 11rem 1fr 7.5rem; gap: 0.75rem; align-items: center;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+            padding: 0.55rem 0.85rem; font-size: 0.88rem;
+        }
+        .ladder-row .rung { font-family: var(--font-display); font-weight: 600; color: var(--accent); }
+        .ladder-row .speed { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+        .res-list { list-style: none; padding: 0; margin: 0.75rem 0; }
+        .res-list li { padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.92rem; }
+        .res-list li:last-child { border-bottom: none; }
+        .res-list .what { color: var(--text-secondary); display: block; font-size: 0.86rem; margin-top: 0.15rem; }
+        .res-list a { color: var(--accent); text-decoration: none; }
+        .res-list a:hover { text-decoration: underline; }
+        .qa { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin: 0.6rem 0; padding: 0.2rem 1rem; }
+        .qa summary { cursor: pointer; padding: 0.6rem 0; font-weight: 600; }
+        .qa p, .qa ul { margin-bottom: 0.75rem; font-size: 0.92rem; }
+        .sim-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 0.4rem 1.25rem; }
+        .chart-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .chart-title { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; }
+        .slide a { color: var(--accent); }
+        @media (max-width: 640px) {
+            .ladder-row { grid-template-columns: 1fr; gap: 0.2rem; }
+            .ladder-row .speed { text-align: left; }
+        }
+        .concepts { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 0.75rem 1rem; margin-top: 1.25rem; font-size: 0.88rem; }
+        .concepts p { margin: 0 0 0.4rem; color: var(--text-secondary); }
+        .concepts .chips { display: flex; flex-wrap: wrap; gap: 0.35rem 0.5rem; }
+        .concepts .chips a { border: 1px solid var(--border); border-radius: 999px; padding: 0.1rem 0.6rem; text-decoration: none; font-size: 0.82rem; }
+        .concepts .chips a:hover { border-color: var(--accent); }
+        .hero { overflow: hidden; }   /* the 600px glow must not widen the page on phones */
+        .chart-pair > *, .diagram-grid > *, .sim-grid > * { min-width: 0; }   /* let wide code scroll inside its column */
+        .slide p code, .slide li code, .slide td code { overflow-wrap: anywhere; }
+        @media (max-width: 640px) { .diagram-box { white-space: normal; max-width: 100%; } }   /* long boxes must wrap on phones */
+        /* FOptInf: keep long titles clear of the slide number on phones */
+        @media (max-width: 640px) { .slide h2 { padding-right: 3.6rem; } }
+        .sim-grid select, .sim-grid input[type="range"] { max-width: 100%; min-width: 0; }   /* long option labels must not spill into the next column */
+
+        /* ── FOptTrn 01 additions: step-ledger bars and the share-by-length table ── */
+        .eq { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-primary); }
+        .stack-rows { display: grid; gap: 0.45rem; margin-top: 0.9rem; }
+        .stack-row { display: grid; grid-template-columns: 5.5rem 1fr; gap: 0.6rem; align-items: center; }
+        .stack-row .stack-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary); text-align: right; }
+        .stack-bar { display: flex; height: 26px; gap: 2px; min-width: 0; }
+        .stack-bar span { display: block; height: 100%; min-width: 0; }
+        .stack-bar span:first-child { border-radius: 4px 0 0 4px; }
+        .stack-bar span:last-child { border-radius: 0 4px 4px 0; }
+        .stack-legend { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; margin-top: 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); }
+        .stack-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 0.35rem; vertical-align: -1px; }
+        .c-dense { background: #8a8078; } .c-attention { background: #4f93bd; } .c-other { background: #5a5048; }
+        .c-transform { background: #aabd59; } .c-masked { background: #b48ce0; }
+        .c-datadata { background: repeating-linear-gradient(45deg, #de6a4a 0 4px, #b2523a 4px 7px); }
+        tr.cur td { color: var(--text-primary); background: rgba(170,189,89,0.10); }
+        .small-note { font-size: 0.85rem; }
+        #slide-10 .metric-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+        @media (max-width: 640px) { .stack-row { grid-template-columns: 4.2rem 1fr; } #slide-10 .control-row label { min-width: 0; flex-basis: 100%; } }
+    </style>
+</head>
+<body>
+
+<header class="hero">
+    <div class="series-label">Fourier Optics for Training &mdash; Presentation 01</div>
+    <h1><span class="accent">Transforms</span> in Training Workloads</h1>
+    <p class="subtitle">What the backward pass and the optimizer step do to a Fourier-domain layer: the gradient of a convolution is a correlation, the weight gradient multiplies two data-dependent spectra, and the masks change every step. A training-step Amdahl analysis for transformer, Hyena-2, hybrid and block-circulant models, with a live explorer.</p>
+
+    <div class="tags">
+        <span class="tag">Backward pass</span>
+        <span class="tag">Correlation</span>
+        <span class="tag">Weight gradient</span>
+        <span class="tag">Amdahl</span>
+        <span class="tag">Block-circulant</span>
+        <span class="tag">Mask rewrites</span>
+    </div>
+
+    <div class="pipeline">
+        <span class="pipeline-step">Forward</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Backward: dX, dW</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Optimizer step</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Static share</span>
+        <span class="pipeline-arrow">&rarr;</span>
+        <span class="pipeline-step">Mask budget</span>
+    </div>
+</header>
+
+<section class="slide" id="slide-00">
+    <div class="slide-number">00</div>
+    <h2>Topics We'll Cover</h2>
+    <ul class="contents-list">
+        <li><a href="#slide-01">What a Training Step Adds to Inference</a></li>
+        <li><a href="#slide-02">The 6N Rule, Reproduced</a></li>
+        <li><a href="#slide-03">What the Inference Series Found</a></li>
+        <li><a href="#slide-04">The Gradient of a Convolution Is a Correlation</a></li>
+        <li><a href="#slide-05">Three 4f Passes: Forward, dX and dW</a></li>
+        <li><a href="#slide-06">Weight-Masked and Data-by-Data Products</a></li>
+        <li><a href="#slide-07">Block-Circulant Weights in Training</a></li>
+        <li><a href="#slide-08">The Training-Step Amdahl Table</a></li>
+        <li><a href="#slide-09">Why the Share Falls from Forward to Step</a></li>
+        <li><a href="#slide-10">Interactive: Training-Step Amdahl Explorer</a></li>
+        <li><a href="#slide-11">Masks Rewritten Every Optimizer Step</a></li>
+        <li><a href="#slide-12">Layer-Major Order</a></li>
+        <li><a href="#slide-13">What Does Not Map in Training</a></li>
+        <li><a href="#slide-14">What to Take Away</a></li>
+    </ul>
+    <div class="concepts">
+        <p><strong>Concepts used here, and where they are explained.</strong> Each links to a glossary entry: this <a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#glossary">series glossary</a>, or the <a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#glossary">Fourier Optics for Inference glossary</a> and the Simulation Engineering Toolkit's for concepts those series already explain.</p>
+        <div class="chips"><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-sixn" title="Training a dense model costs about 6 FLOPs per parameter per token: 2 for the forward pass and 4 for the backward (the activation gradient and the weight gradient), plus an attention term that grows with sequence length. The analysis reproduces it exactly for the transformer variant.">The 6N rule</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-corr" title="For y = h &lowast; u, the input gradient is G correlated with h, IFFT(G&middot;conj(H)), and the filter gradient is G correlated with u, IFFT(G&middot;conj(U)). A backward long convolution is one more FFT and two more Fourier-domain products than the forward; the analysis checks the formulas against direct sums and finite differences.">The gradient of a convolution is a correlation</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-masked" title="A Fourier-domain product whose second operand is a weight spectrum (forward H, backward conj(H)) can be a mask written once per optimizer step. One whose operands both depend on the sample (conj(U)&middot;G for the weight gradient) needs a new mask for every sequence, and in practice stays digital.">Weight-masked and data-by-data products</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-staticshare" title="The fraction of a training step&#x27;s FLOPs that are transforms plus weight-masked products: what an engine with once-per-step masks could take. 1/(1&minus;share) bounds the step speed-up. For Hyena-2 at 4,096 tokens it is 0.14%; for block-circulant weights 9.7%.">Static share and the training Amdahl bound</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-maskrewrite" title="An inference engine writes its filter spectra once; a training engine must rewrite them after every optimizer step, for the forward and the backward pass. Processing the whole step layer by layer amortises each write over every sequence, but the frame budget still rivals the digital step time.">Mask rewrites per optimizer step</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-layermajor" title="Passing every sequence of a step through one layer before moving to the next, so one mask write serves the whole step. It conflicts with pipeline parallelism and activation memory, which prefer sequence-major order.">Layer-major scheduling</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#g-demo" title="An optimizer that DCT-transforms the momentum in small chunks and sends only the largest coefficients between workers (Peng et al., 2024). Its transforms are about 5&times;10^&minus;6 of a step&#x27;s FLOPs: what it saves is link bytes, not compute.">DeMo (decoupled momentum)</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-convthm" title="A convolution in one domain is a pointwise product in the other: F{h &lowast; u} = F{h}&middot;F{u}. A 4f system uses it optically (mask = filter spectrum); FFT convolution uses it digitally in O(n log n).">The convolution theorem</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-longconv" title="A convolution whose filter is as long as the sequence, computed by FFT, pointwise multiply and inverse FFT in O(L log L) instead of O(L&sup2;). It is the token mixer of S4&#x27;s convolution mode, H3 and Hyena.">Long convolution by FFT</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-hyena" title="An attention-free operator: N+1 linear projections, a short depthwise convolution, then N rounds of a long implicit convolution (by FFT) and elementwise gating. Order 2 is the usual language-model setting.">Hyena</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-causalpad" title="An FFT computes a circular convolution, which wraps late inputs onto early outputs. Padding input and filter to at least 2L before the FFT makes it the linear, causal convolution a decoder needs.">Causal zero-padding</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-hybridarch" title="Models that interleave a few attention layers with cheaper mixers (Hyena, Mamba). They keep attention&#x27;s recall where it matters; the transform share falls with the attention fraction.">Hybrid architectures</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-circulant" title="A weight matrix made of circulant blocks, each defined by one vector, so multiplying by it is an FFT, a pointwise product and an inverse FFT (CirCNN). It turns matmuls into transforms; at LLM scale it is speculative.">Block-circulant weights</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-opticalshare" title="The fraction f of prefill FLOPs a transform engine could take over (FFTs plus Fourier-plane multiplies). If it became free, prefill would speed up by at most 1/(1&minus;f); for a Hyena-2 model of Llama-3-8B&#x27;s shape f is 0.20% at 2,048 tokens.">Optical share and the Amdahl bound</a><a href="https://brendanjameslynskey.github.io/SimEng_Hub_Toolkit/#g-amdahl" title="Speeding up part of a program speeds up the whole only in proportion to that part&#x27;s share of the time. After porting a simulator&#x27;s engine, the Python code around it can dominate.">Amdahl's law for a port</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-transformengine" title="An optical MAC accelerates every matrix multiply (the simulator&#x27;s hypothetical optical part); a Fourier transform engine accelerates only FFT and convolution work and leaves matmuls to a digital part.">Transform engine against optical MAC</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-maskcap" title="A 4f pass multiplies by one mask, so every filter spectrum must be on the mask while its inputs pass. Mask values needed per forward pass divided by what the SLM holds gives rewrites per pass, each costing a frame.">Fourier-plane mask capacity</a><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/#g-slm" title="A pixelated device that writes values into a light field. Liquid-crystal SLMs modulate phase or amplitude and settle in tens of milliseconds; a 2-megapixel digital micromirror device switches amplitude at about 1 kHz with 8-bit depth (20 kHz binary). Pixel count and frame rate bound how fast inputs and Fourier-plane masks can change.">Spatial light modulator (SLM)</a></div>
+    </div>
+</section>
+
+<section class="slide" id="slide-01">
+    <div class="slide-number">01</div>
+    <h2>What a Training Step Adds to Inference</h2>
+    <p>The inference series asked what share of a forward pass a Fourier-optical transform engine could take (<a href="https://brendanjameslynskey.github.io/FOptInf_02_Transforms_in_Inference_Workloads/">FOptInf 02</a>). Training runs the same forward pass and then two more kinds of work:</p>
+    <div class="table-wrap">
+    <table>
+        <tr><th>Phase</th><th>For a layer y = W x</th><th>FLOPs, matmul layer</th><th>Counted?</th></tr>
+        <tr><td><strong>Forward</strong></td><td>y = W x, keeping x for later</td><td>2 per weight per token</td><td>yes</td></tr>
+        <tr><td><strong>Backward, dX</strong></td><td>the activation gradient W<sup>T</sup> G, passed to the layer below</td><td>2 per weight per token</td><td>yes</td></tr>
+        <tr><td><strong>Backward, dW</strong></td><td>the weight gradient G X<sup>T</sup>, summed over every token of the step</td><td>2 per weight per token</td><td>yes</td></tr>
+        <tr><td><strong>Optimizer</strong></td><td>AdamW: a few element-wise operations per parameter, once per step</td><td>per parameter, not per token</td><td>no (as norms are not)</td></tr>
+    </table>
+    </div>
+    <ul>
+        <li><strong>The step is large.</strong> The analysis takes an optimizer step of 1,048,576 tokens (illustrative, about what Llama-scale runs use), so at 2,048 tokens a step is 512 sequences. Anything done once per step is amortised over all of them.</li>
+        <li><strong>The weights change after every step.</strong> An inference engine writes its Fourier-plane masks once; a training engine must rewrite them (<a href="#slide-11">slide 11</a>).</li>
+        <li><strong>The question for this deck:</strong> which of the new work is a transform, which of it could sit on a mask, and does the share go up or down? Every number comes from <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/train_flop_share.py">analysis/train_flop_share.py</a>, which extends the inference ledger with the backward pass and writes <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">results.md</a>. Same model shape (Llama-3-8B), same FLOP conventions (matmul 2mnk, real FFT 2.5 n log<sub>2</sub> n, complex multiply 6, add 2).</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-02">
+    <div class="slide-number">02</div>
+    <h2>The 6N Rule, Reproduced</h2>
+    <p>Before trusting the ledger on new layers, check it on the old one. Training a dense model costs about <strong>6N FLOPs per token</strong> (2 forward, 2 for dX, 2 for dW), plus an attention term that grows with the sequence (Kaplan et al., <a href="https://arxiv.org/abs/2001.08361">arXiv:2001.08361</a>; the same accounting appears in the Chinchilla paper's appendix, Hoffmann et al., <a href="https://arxiv.org/abs/2203.15556">arXiv:2203.15556</a>). Here N counts the parameters that multiply activations: the 8,029,995,008 of the untied model less the 128,256 &times; 4,096 input embedding, which is a lookup.</p>
+    <div class="table-wrap"><table>
+<thead><tr><th>Sequence</th><th>This script (GFLOP/token)</th><th>6N + attention (GFLOP/token)</th><th>Ratio</th></tr></thead>
+<tbody>
+<tr><td>2,048</td><td>46.64</td><td>46.64</td><td>1.0000</td></tr>
+<tr><td>4,096</td><td>48.25</td><td>48.25</td><td>1.0000</td></tr>
+<tr><td>8,192</td><td>51.47</td><td>51.47</td><td>1.0000</td></tr>
+<tr><td>32,768</td><td>70.80</td><td>70.80</td><td>1.0000</td></tr>
+</tbody></table></div>
+    <p class="src">Source: <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">results.md</a>, section &ldquo;1. Cross-check: the 6N rule&rdquo;; the pytest suite checks the ratio to 1e-12.</p>
+    <ul>
+        <li><strong>The match is exact by construction</strong>: the ledger charges every matmul's backward at twice its forward, which is what the rule says. Its value is as a check on the bookkeeping (no layer counted twice or missed).</li>
+        <li><strong>Not counted</strong>, as in the rule: softmax, norms, activations, the AdamW update and activation recomputation. FlashAttention's backward recomputes the attention scores (Dao et al., <a href="https://arxiv.org/abs/2205.14135">arXiv:2205.14135</a>), and activation checkpointing re-runs parts of the forward pass (Chen et al., <a href="https://arxiv.org/abs/1604.06174">arXiv:1604.06174</a>); both add digital work, which would lower every share in this deck a little further.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-03">
+    <div class="slide-number">03</div>
+    <h2>What the Inference Series Found</h2>
+    <p><a href="https://brendanjameslynskey.github.io/FOptInf_02_Transforms_in_Inference_Workloads/#slide-06">FOptInf 02</a> counted the forward pass. The short version:</p>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>A standard decoder has no FFT</h4>
+            <p>A Llama-style transformer is matmuls, attention, norms and activations. A Fourier transform engine (as against an optical MAC, which would speed every matmul) has nothing to do; its share is zero, forward or backward.</p>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>Where FFTs appear, they are small</h4>
+            <p>Long-convolution models (Hyena, Poli et al., <a href="https://arxiv.org/abs/2302.10866">arXiv:2302.10866</a>) mix tokens by FFT. The inference series found that for a Hyena-2 model of Llama-3-8B's shape the transform work is <strong>0.20% of prefill FLOPs at 2,048 tokens</strong>: the FFT is what makes Hyena cheap, and the projections and MLP dominate.</p>
+        </div>
+    </div>
+    <p>This script's forward column agrees: Hyena-2 at 2,048 tokens, 0.20% of the forward pass (<a href="#slide-08">slide 08</a>). The physics of the engine (the lens as a Fourier transformer, the 4f system, masks and SLMs, ENOB) is in <a href="https://brendanjameslynskey.github.io/FOptInf_01_Fourier_Optics_for_Engineers/#slide-03">FOptInf 01</a> and is not repeated here.</p>
+    <div class="callout">
+        <div class="callout-label">The hope training might raise</div>
+        <p>Training has three passes for every one of inference, and FFT convolution was introduced for these models to make <em>training</em> affordable at length. Perhaps the backward pass is where transforms pile up? The next slides derive the backward pass of a long convolution, then count. The answer is no: the share goes <em>down</em>.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-04">
+    <div class="slide-number">04</div>
+    <h2>The Gradient of a Convolution Is a Correlation</h2>
+    <p>One channel of a causal long convolution, length L, with the output gradient g = &part;&#x2112;/&part;y arriving from above:</p>
+    <div class="code-block">
+        <div class="code-header">derivation sketch (real signals, indices outside 0..L&minus;1 are zero)</div>
+<pre><code><span class="cm">forward</span>      y[i]   = &Sigma;<sub>k</sub> h[k] u[i&minus;k]                    Y  = H &middot; U
+<span class="cm">input grad</span>   &part;&#x2112;/&part;u[j] = &Sigma;<sub>i</sub> g[i] &part;y[i]/&part;u[j] = &Sigma;<sub>i</sub> g[i] h[i&minus;j]
+                                         dU = G &middot; conj(H)
+<span class="cm">filter grad</span>  &part;&#x2112;/&part;h[k] = &Sigma;<sub>i</sub> g[i] u[i&minus;k]          dH = G &middot; conj(U)</code></pre>
+    </div>
+    <ul>
+        <li><strong>Each gradient is a correlation</strong>: the output gradient slid against the other operand. By the correlation theorem a correlation of real signals is a product with a <em>conjugate</em> spectrum, so dU = IFFT(G&middot;conj(H)) and dH = IFFT(G&middot;conj(U)).</li>
+        <li><strong>Causal padding carries over.</strong> The forward pass is causal (y[i] uses inputs at or before i); its gradient is anti-causal (du[j] uses gradients at or after j), the mirror image. Both need lags from &minus;(L&minus;1) to L&minus;1 free of wrap-around, so the same zero-padding to n &ge; 2L that made the forward FFT linear makes the backward one exact; keep the first L outputs.</li>
+        <li><strong>What it costs per channel</strong>: one FFT of G and one inverse FFT for dU (the same two transforms as the forward), the product with conj(H), the product with conj(U) (U's spectrum is kept from the forward pass), and an accumulation. dH is summed over the step's sequences in the Fourier domain and inverse-transformed once per step.</li>
+    </ul>
+    <div class="table-wrap"><table>
+<thead><tr><th>Length</th><th>max abs error dU (spectral vs direct)</th><th>max abs error dH</th><th>dU vs finite difference</th></tr></thead>
+<tbody>
+<tr><td>64</td><td>6.2e-15</td><td>7.1e-15</td><td>1.4e-08</td></tr>
+<tr><td>1,000</td><td>5.7e-14</td><td>5.7e-14</td><td>7.1e-08</td></tr>
+</tbody></table></div>
+    <p class="src">Source: <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">results.md</a>, section &ldquo;6. Numeric checks of the backward formulas&rdquo;. The spectral formulas agree with direct sums to rounding; the finite-difference column is limited by the difference step, not the formula. Length 1,000 is not a power of two: it is padded to 2,048.</p>
+</section>
+
+<section class="slide" id="slide-05">
+    <div class="slide-number">05</div>
+    <h2>Three 4f Passes: Forward, dX and dW</h2>
+    <p>Mapped onto a 4f system (lens, Fourier-plane mask, lens; <a href="https://brendanjameslynskey.github.io/FOptInf_01_Fourier_Optics_for_Engineers/#slide-03">FOptInf 01, &ldquo;The 4f System&rdquo;</a>), one channel of one layer needs three passes per training sequence. What matters is what sits on the mask:</p>
+    <div class="canvas-wrap">
+        <svg viewBox="0 0 680 330" width="680" height="330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three 4f passes. Forward: input U, lens, mask H (a weight, fixed for the step), lens, output y. Backward dX: input G, lens, mask conj(H) (the same weight, mirrored), lens, output dU. Backward dW: input G, lens, mask conj(U) (data, new for every sequence), then accumulate over the step and one inverse transform per step gives dH.">
+            <style>
+                .bx { fill: rgba(151,205,198,0.08); stroke: #97cdc6; }
+                .bo { fill: rgba(222,128,90,0.10); stroke: #de805a; }
+                .bm { fill: rgba(170,189,89,0.12); stroke: #aabd59; stroke-width: 2; }
+                .bd { fill: rgba(222,106,74,0.10); stroke: #de6a4a; stroke-width: 2; stroke-dasharray: 5 3; }
+                .ar { stroke: #a2978b; stroke-width: 1.5; fill: none; marker-end: url(#ah1); }
+                .t  { fill: #efe8dc; font-family: 'Geist Mono', monospace; font-size: 12px; }
+                .d  { fill: #a2978b; font-family: 'Geist Mono', monospace; font-size: 10px; }
+                .h  { fill: #aabd59; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; }
+                .w  { fill: #de6a4a; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; }
+            </style>
+            <defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#a2978b"/></marker></defs>
+            <!-- row 1: forward -->
+            <text x="10" y="22" class="h">forward</text>
+            <rect x="10" y="32" width="90" height="46" rx="6" class="bx"/><text x="22" y="52" class="t">input u</text><text x="22" y="68" class="d">data</text>
+            <path d="M100 55 L138 55" class="ar"/>
+            <rect x="140" y="32" width="90" height="46" rx="6" class="bo"/><text x="152" y="52" class="t">lens: FFT</text><text x="152" y="68" class="d">U</text>
+            <path d="M230 55 L268 55" class="ar"/>
+            <rect x="270" y="28" width="150" height="54" rx="6" class="bm"/><text x="282" y="48" class="t">mask &times; H</text><text x="282" y="64" class="d">weight: fixed for</text><text x="282" y="76" class="d">the whole step</text>
+            <path d="M420 55 L458 55" class="ar"/>
+            <rect x="460" y="32" width="90" height="46" rx="6" class="bo"/><text x="472" y="52" class="t">lens: IFFT</text><text x="472" y="68" class="d">ADC out</text>
+            <path d="M550 55 L588 55" class="ar"/>
+            <rect x="590" y="32" width="80" height="46" rx="6" class="bx"/><text x="602" y="52" class="t">y</text><text x="602" y="68" class="d">keep U</text>
+            <!-- row 2: backward dX -->
+            <text x="10" y="122" class="h">backward: dX (input gradient)</text>
+            <rect x="10" y="132" width="90" height="46" rx="6" class="bx"/><text x="22" y="152" class="t">input g</text><text x="22" y="168" class="d">from above</text>
+            <path d="M100 155 L138 155" class="ar"/>
+            <rect x="140" y="132" width="90" height="46" rx="6" class="bo"/><text x="152" y="152" class="t">lens: FFT</text><text x="152" y="168" class="d">G</text>
+            <path d="M230 155 L268 155" class="ar"/>
+            <rect x="270" y="128" width="150" height="54" rx="6" class="bm"/><text x="282" y="148" class="t">mask &times; conj(H)</text><text x="282" y="164" class="d">same weight, mirrored</text><text x="282" y="176" class="d">(or phase-flipped)</text>
+            <path d="M420 155 L458 155" class="ar"/>
+            <rect x="460" y="132" width="90" height="46" rx="6" class="bo"/><text x="472" y="152" class="t">lens: IFFT</text><text x="472" y="168" class="d">ADC out</text>
+            <path d="M550 155 L588 155" class="ar"/>
+            <rect x="590" y="132" width="80" height="46" rx="6" class="bx"/><text x="602" y="152" class="t">dU</text><text x="602" y="168" class="d">to layer l&minus;1</text>
+            <!-- row 3: backward dW -->
+            <text x="10" y="222" class="w">backward: dW (filter gradient)</text>
+            <rect x="10" y="232" width="90" height="46" rx="6" class="bx"/><text x="22" y="252" class="t">input g</text><text x="22" y="268" class="d">G reused</text>
+            <path d="M100 255 L138 255" class="ar"/>
+            <rect x="140" y="232" width="90" height="46" rx="6" class="bo"/><text x="152" y="252" class="t">(G from</text><text x="152" y="268" class="d">the dX pass)</text>
+            <path d="M230 255 L268 255" class="ar"/>
+            <rect x="270" y="228" width="150" height="54" rx="6" class="bd"/><text x="282" y="248" class="t">mask &times; conj(U)</text><text x="282" y="264" class="d">DATA: new for every</text><text x="282" y="276" class="d">sequence and layer</text>
+            <path d="M420 255 L458 255" class="ar"/>
+            <rect x="460" y="232" width="90" height="46" rx="6" class="bx"/><text x="472" y="252" class="t">&Sigma; over</text><text x="472" y="268" class="d">the step</text>
+            <path d="M550 255 L588 255" class="ar"/>
+            <rect x="590" y="232" width="80" height="46" rx="6" class="bx"/><text x="602" y="252" class="t">dH</text><text x="602" y="268" class="d">1 IFFT/step</text>
+            <rect x="10" y="300" width="14" height="10" class="bm"/><text x="30" y="309" class="d">weight-masked: one mask write per step</text>
+            <rect x="350" y="300" width="14" height="10" class="bd"/><text x="370" y="309" class="d">data-by-data: one write per sequence</text>
+        </svg>
+    </div>
+    <ul>
+        <li><strong>Forward and dX</strong> have the shape an optical engine wants: a data stream through a mask that holds a weight. The backward-dX mask is the forward mask's conjugate.</li>
+        <li><strong>dW is different in kind.</strong> Both operands of G&middot;conj(U) belong to the sequence being processed. Whichever goes on the mask, the mask must be rewritten for every sequence of every layer.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-06">
+    <div class="slide-number">06</div>
+    <h2>Weight-Masked and Data-by-Data Products</h2>
+    <p>The ledger splits every Fourier-domain product by its operands, because that decides whether a mask written once per optimizer step can hold it:</p>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>conj(H) can be a mask</h4>
+            <ul>
+                <li>H is the spectrum of a weight, fixed between optimizer steps. So is conj(H).</li>
+                <li>For a real filter, conj(H(f)) = H(&minus;f): the conjugate spectrum is the <strong>same mask point-reflected</strong> through the optical axis. A modulator that writes complex values can instead write the negated phase.</li>
+                <li>Equivalently, a correlation is a convolution with the time-reversed filter: the classical optical correlator is a 4f system with the conjugate spectrum on the mask (<a href="https://brendanjameslynskey.github.io/FOptInf_01_Fourier_Optics_for_Engineers/#slide-03">FOptInf 01</a>). In principle, reversing the gradient at the input and output lets the forward mask itself serve the backward pass (this deck's reasoning, not a demonstrated system).</li>
+            </ul>
+        </div>
+        <div class="diagram-panel" style="border-left: 3px solid #de6a4a;">
+            <h4 style="color:#de6a4a;">conj(U)&middot;G cannot be a static mask</h4>
+            <ul>
+                <li>U is the spectrum of this sequence's input to this channel; G is its output gradient. Neither survives to the next sequence.</li>
+                <li>Putting conj(U) on the mask and passing G through works, but costs a mask write per sequence per layer: minutes of frames per step on one illustrative device, and still about a whole digital step for Hyena-2 when spread over one engine per GPU (<a href="#slide-11">slide 11</a>).</li>
+                <li>Optics can correlate two live signals without a written mask (a joint transform correlator records the intensity of their joint spectrum and transforms it again), but that intermediate must itself be written to a modulator for every pair: it moves the write, it does not remove it.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="table-wrap"><table>
+        <tr><th>Class in the ledger</th><th>Products</th><th>Mask written</th></tr>
+        <tr><td><strong>transform</strong></td><td>FFTs and inverse FFTs</td><td>none (the lenses)</td></tr>
+        <tr><td><strong>weight-masked</strong></td><td>U&middot;H forward, G&middot;conj(H) backward</td><td>once per step, per direction</td></tr>
+        <tr><td><strong>data-by-data</strong></td><td>G&middot;conj(U) for the weight gradient</td><td>once per sequence (per token for block-circulant)</td></tr>
+    </table></div>
+    <p><strong>Static share</strong> = transforms plus weight-masked products, over all step FLOPs: what an engine whose masks change only at optimizer steps could take. The <strong>optical share</strong> adds the data-by-data products as well.</p>
+</section>
+
+<section class="slide" id="slide-07">
+    <div class="slide-number">07</div>
+    <h2>Block-Circulant Weights in Training</h2>
+    <p>The inference series' one large-share case made every projection and MLP matrix block-circulant (CirCNN, Ding et al., <a href="https://arxiv.org/abs/1708.08917">arXiv:1708.08917</a>; block 256 here, illustrative): each block is defined by one vector, so a block product is an FFT, a pointwise product and an inverse FFT. Training applies the same split per block:</p>
+    <div class="table-wrap"><table>
+        <tr><th>Pass</th><th>Per token, per block row and column</th><th>Class</th></tr>
+        <tr><td>Forward</td><td>FFT the input blocks; multiply by each weight block's spectrum W<sub>pq</sub>; sum over input blocks; IFFT the output blocks</td><td>transform, weight-masked</td></tr>
+        <tr><td>Backward dX</td><td>FFT the gradient blocks; multiply by conj(W<sub>pq</sub>); sum; IFFT</td><td>transform, weight-masked</td></tr>
+        <tr><td>Backward dW</td><td>multiply G<sub>p</sub> by conj(X<sub>q</sub>), accumulated over every token of the step; one IFFT per block per step</td><td><strong>data-by-data</strong></td></tr>
+        <tr><td>Once per step</td><td>FFT of every weight block after the update; IFFT of every block gradient</td><td>transform, amortised</td></tr>
+    </table></div>
+    <ul>
+        <li><strong>The weight gradient is now a data-by-data product per token</strong>, not per sequence, because every token's input blocks form a new conj(X). At 4,096 tokens, 20.73% of this model's optical work is data-by-data.</li>
+        <li><strong>The LM head stays dense</strong> and, with every other matrix circulant, is most of what remains digital; the explorer's bars (<a href="#slide-10">slide 10</a>) show it.</li>
+    </ul>
+    <div class="callout">
+        <div class="callout-label">Speculative</div>
+        <p>No published LLM of this size is block-circulant throughout, as far as the inference series found. Whether such a model trains to useful quality is unknown, and training it would itself be the experiment.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-08">
+    <div class="slide-number">08</div>
+    <h2>The Training-Step Amdahl Table</h2>
+    <p>Share of FLOPs that is transform work in the forward pass, the backward pass and the whole step; the static share; the data-by-data part of the optical work; and the Amdahl bounds 1/(1&minus;share). The transformer is 0.00% throughout and omitted.</p>
+    <div class="table-wrap"><table>
+<thead><tr><th>Variant</th><th>Sequence</th><th>Fwd share</th><th>Bwd share</th><th>Step share</th><th>Static share</th><th>Data-by-data part of optical</th><th>Amdahl (all)</th><th>Amdahl (static)</th></tr></thead>
+<tbody>
+<tr><td>Hyena-2</td><td>2,048</td><td>0.20%</td><td>0.10%</td><td>0.14%</td><td>0.13%</td><td>2.32%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hyena-2</td><td>4,096</td><td>0.21%</td><td>0.11%</td><td>0.15%</td><td>0.14%</td><td>2.15%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hyena-2</td><td>8,192</td><td>0.23%</td><td>0.12%</td><td>0.16%</td><td>0.15%</td><td>2.01%</td><td>1.002x</td><td>1.002x</td></tr>
+<tr><td>Hyena-2</td><td>32,768</td><td>0.27%</td><td>0.14%</td><td>0.18%</td><td>0.18%</td><td>1.75%</td><td>1.002x</td><td>1.002x</td></tr>
+<tr><td>Hybrid 1:3 attention:Hyena</td><td>2,048</td><td>0.15%</td><td>0.08%</td><td>0.10%</td><td>0.10%</td><td>2.32%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hybrid 1:3 attention:Hyena</td><td>4,096</td><td>0.16%</td><td>0.08%</td><td>0.11%</td><td>0.11%</td><td>2.15%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hybrid 1:3 attention:Hyena</td><td>8,192</td><td>0.17%</td><td>0.09%</td><td>0.12%</td><td>0.11%</td><td>2.01%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hybrid 1:3 attention:Hyena</td><td>32,768</td><td>0.18%</td><td>0.09%</td><td>0.12%</td><td>0.12%</td><td>1.75%</td><td>1.001x</td><td>1.001x</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>2,048</td><td>13.99%</td><td>11.06%</td><td>12.06%</td><td>9.53%</td><td>20.98%</td><td>1.137x</td><td>1.105x</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>4,096</td><td>14.18%</td><td>11.16%</td><td>12.19%</td><td>9.66%</td><td>20.73%</td><td>1.139x</td><td>1.107x</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>8,192</td><td>14.36%</td><td>11.26%</td><td>12.32%</td><td>9.79%</td><td>20.49%</td><td>1.140x</td><td>1.109x</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>32,768</td><td>14.75%</td><td>11.47%</td><td>12.59%</td><td>10.07%</td><td>19.98%</td><td>1.144x</td><td>1.112x</td></tr>
+</tbody></table></div>
+    <p class="src">Source: <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">results.md</a>, section &ldquo;2. A training step&rdquo;. The hybrid's ratio and the circulant block size are illustrative.</p>
+    <ul>
+        <li><strong>Hyena-2 at 4,096 tokens:</strong> 0.21% of a forward pass, 0.15% of a training step, 0.14% with once-per-step masks. If the optics made all of it free, a step would be at most 1.001x faster.</li>
+        <li><strong>Block-circulant at 4,096:</strong> 12.19% of the step (Amdahl 1.139x), but only 9.66% with static masks (1.107x), because a fifth of the optical work is the weight gradient.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-09">
+    <div class="slide-number">09</div>
+    <h2>Why the Share Falls from Forward to Step</h2>
+    <p>Every row of the table has the same shape: backward share well below forward share, step share in between. The ledger shows why, per Hyena channel and per matmul:</p>
+    <div class="table-wrap"><table>
+        <tr><th>Work</th><th>Forward</th><th>Backward</th><th>Backward / forward</th></tr>
+        <tr><td>Long FFTs per channel</td><td>FFT(u), IFFT(y)</td><td>FFT(G), IFFT(dU)</td><td>the same</td></tr>
+        <tr><td>Fourier-domain products per channel</td><td>U&middot;H</td><td>G&middot;conj(H), G&middot;conj(U)</td><td>twice</td></tr>
+        <tr><td>Matmuls (projections, MLP, LM head)</td><td>W x</td><td>W<sup>T</sup> G and G X<sup>T</sup></td><td>twice</td></tr>
+    </table></div>
+    <ul>
+        <li><strong>The backward pass adds no long FFTs beyond the forward's count</strong>, because U's spectrum is kept from the forward pass and dH is accumulated in the Fourier domain. For Hyena-2, where FFTs are most of the optical work and matmuls most of the total, the backward share is therefore about half the forward: 0.21% against 0.11% at 4,096 tokens.</li>
+        <li><strong>The step is a weighted mean</strong>, about one part forward to two parts backward (for Hyena-2 the backward pass is 1.998x the forward in FLOPs, <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.json">results.json</a>), so it lands nearer the backward share: 0.15%.</li>
+        <li><strong>Block-circulant falls less</strong> (14.18% to 11.16%), because there the Fourier-domain products, which do double, are a large part of the optical work.</li>
+        <li><strong>The per-step terms are negligible.</strong> Filter FFTs and gradient IFFTs once per step are shared by 256 sequences at 4,096 tokens, so they are a tiny correction to the per-sequence work.</li>
+    </ul>
+    <div class="callout">
+        <div class="callout-label">So</div>
+        <p>Training does not rescue the transform share. FFT convolution makes long-context training cheap, and that is exactly why it is a small part of what a training step spends.</p>
+    </div>
+</section>
+
+<section class="slide" id="slide-10">
+    <div class="slide-number">10</div>
+    <h2>Interactive: Training-Step Amdahl Explorer</h2>
+    <p>The FLOP ledger of <code>train_flop_share.py</code> (<code>step_per_sequence</code> for the four variants, its op classes and the section-4 mask budget), ported to JavaScript and tested to give identical numbers (<a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/js/train_flop_model.js">js/train_flop_model.js</a>, checked by <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/test_js_parity.py">analysis/test_js_parity.py</a>). The default state reproduces the results.md section 2 row &ldquo;Hyena-2 + block-circulant weights, 4,096&rdquo;: 14.18%, 11.16%, 12.19%, 9.66%, 20.73%, 1.139x, 1.107x.</p>
+    <div class="control-panel">
+        <div class="sim-grid">
+            <div class="control-row"><label for="tr-v">Model (Llama-3-8B shape)</label><select id="tr-v"></select></div>
+            <div class="control-row"><label for="tr-s">Sequence length</label><input type="range" id="tr-s" min="9" max="17" value="12"><span class="val" id="tr-s-val">4,096</span></div>
+            <div class="control-row"><label for="tr-t">Tokens per optimizer step</label><input type="range" id="tr-t" min="17" max="24" value="20"><span class="val" id="tr-t-val">1,048,576</span></div>
+        </div>
+        <div class="metric-grid">
+            <div class="metric"><div class="metric-label">Forward share</div><div class="metric-value" id="tr-fwd">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Backward share</div><div class="metric-value" id="tr-bwd">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Step share</div><div class="metric-value" id="tr-step">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Static share</div><div class="metric-value" id="tr-static">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Data-by-data part</div><div class="metric-value" id="tr-dd">&mdash;</div></div>
+            <div class="metric"><div class="metric-label">Amdahl all / static</div><div class="metric-value" id="tr-amd">&mdash;</div></div>
+        </div>
+        <div class="stack-rows" id="tr-bars" aria-label="FLOP classes of the forward pass, the backward pass and the whole step"></div>
+        <div class="stack-legend" id="tr-legend"></div>
+        <div class="result-box" id="tr-mask"></div>
+        <div class="table-wrap"><table id="tr-table"></table></div>
+    </div>
+<script>
+// train_flop_model.js: JavaScript port of analysis/train_flop_share.py's training-step FLOP ledger,
+// used live in FOptTrn deck 01. Same shape (Llama-3-8B), same four variants, same counting
+// conventions and the same floating-point operation order, so the numbers match results.md
+// (tested by analysis/test_js_parity.py, which runs this file in node).
+(function (root) {
+    const D = 4096, L = 32, FF = 14336, V = 128256, KV = 8 * (4096 / 32);   // Llama-3-8B
+    const ORDER = 2, SHORT = 3, BLOCK = 256;
+    const STEP_TOKENS = 1048576;                       // tokens per optimizer step (illustrative)
+    const SLM_PIXELS = 2e6, SLM_HZ = 1031.0;           // illustrative mask device
+    const GPUS = 64, GPU_FLOPS = 400e12;               // illustrative cluster
+    const VARIANTS = ['transformer', 'hyena', 'hybrid', 'hyena_circ'];
+    const LABEL = { transformer: 'Transformer (Llama-3-8B)', hyena: 'Hyena-2',
+                    hybrid: 'Hybrid 1:3 attention:Hyena', hyena_circ: 'Hyena-2 + block-circulant weights' };
+    const KEYS = ['dense', 'attention', 'transform', 'masked', 'datadata', 'other'];
+
+    const rfft = n => 2.5 * n * Math.log2(n);           // FFTW's convention; n is a power of two
+    const pow2AtLeast = n => { let p = 1; while (p < n) p *= 2; return p; };
+    const div = (a, b) => Math.floor(a / b);
+    const ops = (o = {}) => { const r = {}; for (const k of KEYS) r[k] = o[k] || 0; return r; };
+    const add = (a, b) => { for (const k of KEYS) a[k] = a[k] + b[k]; return a; };
+    const plus = (a, b) => add(ops(a), b);
+    const scaled = (a, f) => { const r = {}; for (const k of KEYS) r[k] = a[k] * f; return r; };
+    const total = o => o.dense + o.attention + o.transform + o.masked + o.datadata + o.other;
+    const optical = o => o.transform + o.masked + o.datadata;
+    const opticalStatic = o => o.transform + o.masked;
+
+    // y = W x, W of shape (m, n), on `tokens` vectors: [forward, backward]
+    function matrix(m, n, tokens, circ, sps) {
+        if (!circ) { const f = ops({ dense: 2.0 * m * n * tokens }); return [f, scaled(f, 2.0)]; }
+        const k = BLOCK, bins = div(k, 2) + 1, p = div(m, k), q = div(n, k);
+        const f = ops({ transform: tokens * (q + p) * rfft(k), masked: tokens * p * q * bins * 6.0,
+                        other: tokens * p * (q - 1) * bins * 2.0 });
+        const b = ops({ transform: tokens * (p + q) * rfft(k), masked: tokens * p * q * bins * 6.0,
+                        datadata: tokens * p * q * bins * 6.0,
+                        other: tokens * (q * (p - 1) + p * q) * bins * 2.0 });
+        f.transform = f.transform + p * q * rfft(k) / sps;   // once per step: FFT of the weight blocks
+        b.transform = b.transform + p * q * rfft(k) / sps;   // once per step: IFFT of dW
+        return [f, b];
+    }
+    function mlp(tokens, circ, sps) {
+        const f = ops(), b = ops();
+        for (const [m, n] of [[FF, D], [FF, D], [D, FF]]) { const [fo, bo] = matrix(m, n, tokens, circ, sps); add(f, fo); add(b, bo); }
+        return [f, b];
+    }
+    function attentionBlock(s) {
+        const f = ops({ dense: 2.0 * s * (2 * D * D + 2 * D * KV), attention: 2.0 * D * s * (s + 1) });
+        return [f, scaled(f, 2.0)];
+    }
+    function hyenaBlock(s, circ, sps) {
+        const f = ops(), b = ops();
+        for (const [m, n] of [[(ORDER + 1) * D, D], [D, D]]) { const [fo, bo] = matrix(m, n, s, circ, sps); add(f, fo); add(b, bo); }
+        f.other = f.other + (s * 2.0 * SHORT * (ORDER + 1) * D + s * ORDER * D);
+        b.other = b.other + 2.0 * (s * 2.0 * SHORT * (ORDER + 1) * D + s * ORDER * D);
+        const n = pow2AtLeast(2 * s), bins = div(n, 2) + 1, ch = ORDER * D;
+        f.transform = f.transform + ch * 2 * rfft(n);         // FFT(u), IFFT(y)
+        f.masked = f.masked + ch * bins * 6.0;                // U . H
+        b.transform = b.transform + ch * 2 * rfft(n);         // FFT(G), IFFT(dU)
+        b.masked = b.masked + ch * bins * 6.0;                // G . conj(H)
+        b.datadata = b.datadata + ch * bins * 6.0;            // G . conj(U)
+        b.other = b.other + ch * bins * 2.0;                  // accumulate dH spectrum
+        f.transform = f.transform + ch * rfft(n) / sps;       // once per step: FFT of each filter
+        b.transform = b.transform + ch * rfft(n) / sps;       // once per step: IFFT of its gradient
+        return [f, b];
+    }
+    function lmHead(tokens) { const f = ops({ dense: 2.0 * V * D * tokens }); return [f, scaled(f, 2.0)]; }
+
+    // Forward and backward FLOPs for one training sequence of length s: { fwd, bwd }
+    function stepPerSequence(variant, s, stepTokens = STEP_TOKENS) {
+        const sps = stepTokens / s, circ = variant === 'hyena_circ';
+        const f = ops(), b = ops();
+        for (let layer = 0; layer < L; layer++) {
+            const [fo, bo] = (variant === 'transformer' || (variant === 'hybrid' && layer % 4 === 0))
+                ? attentionBlock(s) : hyenaBlock(s, circ, sps);
+            add(f, fo); add(b, bo);
+            const [fm, bm] = mlp(s, circ, sps);
+            add(f, fm); add(b, bm);
+        }
+        const [fh, bh] = lmHead(s);
+        return { fwd: plus(f, fh), bwd: plus(b, bh) };
+    }
+    // The shares of results.md section 2
+    function summary(variant, s, stepTokens = STEP_TOKENS) {
+        const { fwd, bwd } = stepPerSequence(variant, s, stepTokens), t = plus(fwd, bwd);
+        const ft = total(fwd), bt = total(bwd), tt = total(t);
+        const r = { fwd, bwd, step: t, fwdTotal: ft, bwdTotal: bt, stepTotal: tt,
+                    fwdShare: ft ? optical(fwd) / ft : 0, bwdShare: optical(bwd) / bt,
+                    stepShare: optical(t) / tt, staticShare: opticalStatic(t) / tt,
+                    datadataPart: optical(t) ? t.datadata / optical(t) : 0,
+                    gflopPerToken: tt / s / 1e9, bwdOverFwd: bt / ft };
+        r.amdahlAll = 1 / (1 - r.stepShare);
+        r.amdahlStatic = 1 / (1 - r.staticShare);
+        return r;
+    }
+    // SLM frames per optimizer step, layer-major order (results.md section 4; Hyena variants only)
+    function maskBudget(variant, s, stepTokens = STEP_TOKENS) {
+        const n = pow2AtLeast(2 * s), seqs = div(stepTokens, s);
+        const mats = [[(ORDER + 1) * D, D], [D, D], [FF, D], [FF, D], [D, FF]];
+        let weightVals = L * ORDER * D * (div(n, 2) + 1);
+        if (variant === 'hyena_circ') {
+            let a = 0; for (const [m, nn] of mats) a += div(m, BLOCK) * div(nn, BLOCK) * (div(BLOCK, 2) + 1);
+            weightVals += L * a;
+        }
+        const staticFrames = 2 * Math.ceil(weightVals / SLM_PIXELS);
+        let ddVals = L * ORDER * D * (div(n, 2) + 1) * seqs;
+        if (variant === 'hyena_circ') {
+            let a = 0; for (const [, nn] of mats) a += div(nn, BLOCK) * (div(BLOCK, 2) + 1);
+            ddVals += L * a * stepTokens;
+        }
+        const ddFrames = Math.ceil(ddVals / SLM_PIXELS);
+        const stepS = summary(variant, s, stepTokens).gflopPerToken * 1e9 * stepTokens / (GPUS * GPU_FLOPS);
+        return { seqs, weightValues: weightVals, staticFrames, staticS: staticFrames / SLM_HZ,
+                 ddValues: ddVals, ddFrames, ddS: ddFrames / SLM_HZ, stepS };
+    }
+
+    const api = { VARIANTS, LABEL, KEYS, STEP_TOKENS, stepPerSequence, summary, maskBudget, total, optical, opticalStatic };
+    if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.TrainFlopModel = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+    <script>
+    (function () {
+        const M = window.TrainFlopModel, $ = id => document.getElementById(id);
+        const CLASSES = [['dense', 'dense matmul'], ['attention', 'attention'], ['other', 'other (short conv, gating, sums)'],
+                         ['transform', 'FFT / IFFT'], ['masked', 'weight-masked product'], ['datadata', 'data-by-data product']];
+        const pct = (x, d = 2) => (100 * x).toFixed(d) + '%';
+        const num = x => x.toLocaleString('en-GB');
+        const sec = x => x.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' s';
+        $('tr-v').innerHTML = M.VARIANTS.map(v => `<option value="${v}"${v === 'hyena_circ' ? ' selected' : ''}>${M.LABEL[v]}</option>`).join('');
+        $('tr-legend').innerHTML = CLASSES.map(([k, n]) => `<span><i class="c-${k}"></i>${n}</span>`).join('');
+        function bar(label, o) {
+            const t = M.total(o);
+            const segs = CLASSES.filter(([k]) => o[k] > 0).map(([k, n]) =>
+                `<span class="c-${k}" style="flex:${o[k] / t} 1 0" title="${label}: ${n} ${pct(o[k] / t)}"></span>`).join('');
+            return `<div class="stack-row"><div class="stack-label">${label}</div><div class="stack-bar">${segs}</div></div>`;
+        }
+        function rec() {
+            const v = $('tr-v').value, s = 2 ** +$('tr-s').value, st = 2 ** +$('tr-t').value;
+            $('tr-s-val').textContent = num(s);
+            $('tr-t-val').textContent = num(st);
+            const r = M.summary(v, s, st);
+            $('tr-fwd').textContent = pct(r.fwdShare);
+            $('tr-bwd').textContent = pct(r.bwdShare);
+            $('tr-step').textContent = pct(r.stepShare);
+            $('tr-static').textContent = pct(r.staticShare);
+            $('tr-dd').textContent = pct(r.datadataPart);
+            $('tr-amd').textContent = r.amdahlAll.toFixed(3) + 'x / ' + r.amdahlStatic.toFixed(3) + 'x';
+            $('tr-bars').innerHTML = bar('forward', r.fwd) + bar('backward', r.bwd) + bar('step', r.step);
+            const seqs = Math.floor(st / s);
+            let mask = `<span class="line-label">${num(seqs)} sequences per step &middot; ${r.gflopPerToken.toFixed(2)} GFLOP per token &middot; backward/forward ${r.bwdOverFwd.toFixed(3)}</span><br>`;
+            if (v === 'hyena' || v === 'hyena_circ') {
+                const m = M.maskBudget(v, s, st);
+                mask += `<span class="line-label">Digital step (illustrative 64 GPUs at 400 TFLOP/s):</span> <span class="line-val">${sec(m.stepS)}</span><br>`
+                      + `<span class="line-label">Weight-mask frames, fwd + bwd (2 MP, 1,031 Hz):</span> <span class="line-val">${num(m.staticFrames)} = ${sec(m.staticS)}</span><br>`
+                      + `<span class="line-label">Data-by-data frames:</span> <span class="line-val">${num(m.ddFrames)} = ${sec(m.ddS)}</span>`;
+            } else {
+                mask += '<span class="line-label">Mask budget (results.md section 4) is computed for the Hyena-2 variants only.</span>';
+            }
+            $('tr-mask').innerHTML = mask;
+            let rows = '<thead><tr><th>Sequence</th><th>Fwd</th><th>Bwd</th><th>Step</th><th>Static</th><th>Amdahl (static)</th></tr></thead><tbody>';
+            for (let e = 9; e <= 17; e++) {
+                const q = M.summary(v, 2 ** e, st);
+                rows += `<tr${2 ** e === s ? ' class="cur"' : ''}><td>${num(2 ** e)}</td><td>${pct(q.fwdShare)}</td><td>${pct(q.bwdShare)}</td><td>${pct(q.stepShare)}</td><td>${pct(q.staticShare)}</td><td>${q.amdahlStatic.toFixed(3)}x</td></tr>`;
+            }
+            $('tr-table').innerHTML = rows + '</tbody>';
+            window.trState = { fwd: pct(r.fwdShare), bwd: pct(r.bwdShare), step: pct(r.stepShare), static: pct(r.staticShare),
+                               dd: pct(r.datadataPart), amdahlAll: r.amdahlAll.toFixed(3) + 'x', amdahlStatic: r.amdahlStatic.toFixed(3) + 'x' };
+        }
+        ['tr-v', 'tr-s', 'tr-t'].forEach(id => $(id).addEventListener('input', rec));
+        window.trDemo = { set(o) { for (const [k, v] of Object.entries(o)) $(k).value = v; rec(); return window.trState; } };
+        rec();
+    })();
+    </script>
+    <p class="small-note">Things to try: move the step size and watch the shares stay put while the digital step time grows and the weight-mask frames do not; then switch to the transformer and see the bars turn entirely digital. Sequences beyond the model's trained context are shape-only extrapolations, and the 64-GPU cluster and mask device are illustrative.</p>
+</section>
+
+<section class="slide" id="slide-11">
+    <div class="slide-number">11</div>
+    <h2>Masks Rewritten Every Optimizer Step</h2>
+    <p>An inference engine writes its filter spectra once and keeps them. A training engine must rewrite every weight spectrum after every optimizer step, for the forward pass (H) and the backward pass (conj(H)). On the inference series' illustrative device, a 2-megapixel micromirror device at 1,031 Hz with 8-bit depth, holding one complex value per pixel (optimistic):</p>
+    <div class="table-wrap"><table>
+<thead><tr><th>Variant</th><th>Sequence</th><th>Sequences/step</th><th>Digital step time</th><th>Weight-mask frames (fwd + bwd)</th><th>Time</th><th>Data-by-data frames</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>Hyena-2</td><td>2,048</td><td>512</td><td>2.05 s</td><td>538</td><td>0.52 s</td><td>137,507</td><td>133 s</td></tr>
+<tr><td>Hyena-2</td><td>8,192</td><td>128</td><td>2.05 s</td><td>2,148</td><td>2.08 s</td><td>137,456</td><td>133 s</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>2,048</td><td>512</td><td>0.15 s</td><td>554</td><td>0.54 s</td><td>397,218</td><td>385 s</td></tr>
+<tr><td>Hyena-2 + block-circulant weights</td><td>8,192</td><td>128</td><td>0.15 s</td><td>2,164</td><td>2.10 s</td><td>397,168</td><td>385 s</td></tr>
+</tbody></table></div>
+    <p class="src">Source: <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">results.md</a>, section &ldquo;4. Holding the masks&rdquo;. Digital step time = step FLOPs on an illustrative 64 GPUs at 400 TFLOP/s sustained each.</p>
+    <ul>
+        <li><strong>Weight masks alone rival the step.</strong> Rewriting the Hyena-2 filter spectra takes 0.52 s per step at 2,048 tokens and 2.08 s at 8,192 (longer sequences have longer filter spectra), against a 2.05 s digital step; for the block-circulant model, whose digital step is only 0.15 s, the rewrite alone is several times the step.</li>
+        <li><strong>Data-by-data masks are out of reach:</strong> 133 s of frames per step for Hyena-2, 385 s for block-circulant, against seconds of digital work. The weight gradient stays digital, and only the static share of <a href="#slide-08">slide 08</a> is a candidate.</li>
+        <li><strong>Bigger steps help the weight masks only:</strong> their frame count does not depend on how many tokens the step holds, while the digital step time grows with it. The explorer on <a href="#slide-10">slide 10</a> computes this live.</li>
+    </ul>
+</section>
+
+<section class="slide" id="slide-12">
+    <div class="slide-number">12</div>
+    <h2>Layer-Major Order</h2>
+    <p>The frame counts above assume the most favourable schedule: <strong>layer-major</strong> order, in which every sequence of the step passes through one layer while that layer's mask is loaded, before the mask is rewritten for the next layer.</p>
+    <div class="diagram-grid cols-2">
+        <div class="diagram-panel accent-border">
+            <h4>Layer-major: one write per layer per step</h4>
+            <ul>
+                <li>Forward: load layer 1's H, stream all 512 sequences (at 2,048 tokens), move to layer 2, and so on.</li>
+                <li>Backward, in reverse layer order: load conj(H), stream all the gradients.</li>
+                <li>Each weight mask is written twice per step, which is the &ldquo;fwd + bwd&rdquo; column of <a href="#slide-11">slide 11</a>.</li>
+            </ul>
+        </div>
+        <div class="diagram-panel accent-border">
+            <h4>What it costs</h4>
+            <ul>
+                <li><strong>Activation memory:</strong> the whole step's activations at a layer boundary must be held at once, where ordinary training holds one micro-batch's.</li>
+                <li><strong>Pipeline parallelism</strong> streams micro-batches through stages in sequence order, the opposite schedule.</li>
+                <li><strong>Sequence-major</strong> order instead would reload every mask for every sequence, multiplying the weight-mask frames by the sequences per step.</li>
+            </ul>
+        </div>
+    </div>
+    <p>Whether a cluster can run layer-major for the layers that touch the engine, and what that does to memory, parallelism and step time, is the subject of <a href="https://brendanjameslynskey.github.io/FOptTrn_03_Optical_Training_Clusters/">deck 03, &ldquo;Optical Engines in a Training Cluster&rdquo;</a>.</p>
+</section>
+
+<section class="slide" id="slide-13">
+    <div class="slide-number">13</div>
+    <h2>What Does Not Map in Training</h2>
+    <div class="table-wrap">
+    <table>
+        <tr><th>Work</th><th>Why a Fourier transform engine does not help</th></tr>
+        <tr><td>Attention, forward and backward</td><td>Data-dependent, causal, softmax-normalised products: not convolutions. The backward pass recomputes or stores the score matrix and does twice the forward's matmul work; none of it is a transform</td></tr>
+        <tr><td>Dense projections, MLP, LM head (dX and dW)</td><td>General matmuls, now three times over: work for an optical MAC, not a Fourier engine, unless the weights are structured (<a href="#slide-07">slide 07</a>)</td></tr>
+        <tr><td>Weight gradients of Fourier-domain layers</td><td>Data-by-data products (<a href="#slide-06">slide 06</a>): a mask write per sequence, or per token for block-circulant</td></tr>
+        <tr><td>Norms, activations, softmax and the loss</td><td>Non-linear; stay digital, forward and backward</td></tr>
+        <tr><td>The optimizer's element-wise work</td><td>AdamW (Loshchilov and Hutter, <a href="https://arxiv.org/abs/1711.05101">arXiv:1711.05101</a>) updates each parameter from its gradient and two moment estimates: element-wise arithmetic, not a transform</td></tr>
+        <tr><td>AdamW's states</td><td>Two moments per parameter, kept in memory between steps: a capacity and bandwidth problem. A Fourier-plane mask is not a store for them</td></tr>
+        <tr><td>MoE routing</td><td>Data-dependent dispatch of tokens to experts, with its own load-balancing gradients: control flow, not a convolution</td></tr>
+        <tr><td>Gradient all-reduce</td><td>Communication. DeMo DCT-compresses the momentum before it is sent, but its transforms are 4.76e-06 of a step's FLOPs: the saving is in bytes, the subject of <a href="https://brendanjameslynskey.github.io/FOptTrn_03_Optical_Training_Clusters/">deck 03</a> and the Compute in Transit series</td></tr>
+    </table>
+    </div>
+    <p>And the hidden costs that apply even where it maps, now per step instead of once: mask rewrites, conversions per value, and the precision a gradient format asks for (<a href="https://brendanjameslynskey.github.io/FOptTrn_02_Optical_Backpropagation/">deck 02</a>).</p>
+</section>
+
+<section class="slide" id="slide-14">
+    <div class="slide-number">14</div>
+    <h2>What to Take Away</h2>
+    <ul>
+        <li><strong>The ledger is right where it can be checked:</strong> it reproduces the 6N rule plus attention exactly for the transformer, and the spectral backward formulas match direct sums to rounding.</li>
+        <li><strong>The gradient of a convolution is a correlation.</strong> dU = IFFT(G&middot;conj(H)) uses the weight's own spectrum, mirrored: a mask that can be written once per step. dH = IFFT(G&middot;conj(U)) multiplies two data spectra: a mask per sequence, so it stays digital.</li>
+        <li><strong>Training does not rescue the transform share.</strong> The backward pass has as many long FFTs as the forward while its matmuls double, so the share falls: Hyena-2 at 4,096 tokens is 0.21% of a forward pass, 0.15% of a step and 0.14% with static masks.</li>
+        <li><strong>Block-circulant weights</strong> (speculative at LLM scale) raise the step share to 12.19% (Amdahl 1.139x), but a fifth of that optical work is the weight gradient, so once-per-step masks hold 9.66% (1.107x).</li>
+        <li><strong>The masks change every step.</strong> Even in layer-major order, rewriting the weight spectra takes from a quarter of a digital step (2,048 tokens) to a whole one (8,192) for Hyena-2 on the illustrative device, and several steps' worth for block-circulant; data-by-data masks would take minutes.</li>
+        <li><strong>Next:</strong> <a href="https://brendanjameslynskey.github.io/FOptTrn_02_Optical_Backpropagation/">deck 02, &ldquo;Optical Backpropagation and In-Situ Training&rdquo;</a>, turns from training LLMs on optics to training the optics: in-silico diffractive networks, in-situ backpropagation by the adjoint method, physics-aware training, direct feedback alignment, and the ENOB a gradient format asks for.</li>
+    </ul>
+</section>
+
+<!-- ════════════════════════════════════ Footer ════════════════════════════════════ -->
+<footer class="footer">
+    <p>Part of the <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training">Fourier Optics for Training series</a> &middot; <a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/#glossary">glossary: every concept and where it is explained</a> &middot; numbers: <a href="https://github.com/BrendanJamesLynskey/LLM_Hub_Fourier_Optics_Training/blob/main/analysis/results.md">analysis/results.md</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;"><a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Training/">&larr; Series index</a> &nbsp;&middot;&nbsp; <a href="https://brendanjameslynskey.github.io/FOptInf_02_Transforms_in_Inference_Workloads/">the inference version: FOptInf 02 Transforms in Inference Workloads</a> &nbsp;&middot;&nbsp; <a href="https://brendanjameslynskey.github.io/FOptTrn_02_Optical_Backpropagation/">02 Optical Backpropagation and In-Situ Training &rarr;</a></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem;">Sister series: <a href="https://brendanjameslynskey.github.io/LLM_Hub_Fourier_Optics_Inference/">Fourier Optics for Inference</a> &middot; <a href="https://brendanjameslynskey.github.io/LLM_Hub_Compute_in_Transit/">Compute in Transit</a> &middot; <a href="https://brendanjameslynskey.github.io/FHE_Hub_Accelerator_Simulators/">FHE Accelerator Simulators</a> &middot; <a href="https://brendanjameslynskey.github.io/SimEng_Hub_Toolkit/">Simulation Engineering Toolkit</a></p>
+</footer>
+
+<script>
+    // Smooth scroll for TOC links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    // Subtle fade-in on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.slide').forEach(slide => {
+        slide.style.opacity = '0';
+        slide.style.transform = 'translateY(30px)';
+        slide.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(slide);
+    });
+</script>
+
+</body>
+</html>
