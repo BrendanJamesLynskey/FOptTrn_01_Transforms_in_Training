@@ -793,6 +793,7 @@
         @media (max-width: 640px) { .diagram-box { white-space: normal; max-width: 100%; } }   /* long boxes must wrap on phones */
         /* FOptInf: keep long titles clear of the slide number on phones */
         @media (max-width: 640px) { .slide h2 { padding-right: 3.6rem; } }
+        .slide h2 { padding-right: 3.6rem; }   /* long titles must clear the slide number on desktop too */
         .sim-grid select, .sim-grid input[type="range"] { max-width: 100%; min-width: 0; }   /* long option labels must not spill into the next column */
 
         /* ── FOptTrn 01 additions: step-ledger bars and the share-by-length table ── */
@@ -1372,7 +1373,7 @@
         <tr><td>The optimizer's element-wise work</td><td>AdamW (Loshchilov and Hutter, <a href="https://arxiv.org/abs/1711.05101">arXiv:1711.05101</a>) updates each parameter from its gradient and two moment estimates: element-wise arithmetic, not a transform</td></tr>
         <tr><td>AdamW's states</td><td>Two moments per parameter, kept in memory between steps: a capacity and bandwidth problem. A Fourier-plane mask is not a store for them</td></tr>
         <tr><td>MoE routing</td><td>Data-dependent dispatch of tokens to experts, with its own load-balancing gradients: control flow, not a convolution</td></tr>
-        <tr><td>Gradient all-reduce</td><td>Communication. DeMo DCT-compresses the momentum before it is sent, but its transforms are 4.76e-06 of a step's FLOPs: the saving is in bytes, the subject of <a href="https://brendanjameslynskey.github.io/FOptTrn_03_Optical_Training_Clusters/">deck 03</a> and the Compute in Transit series</td></tr>
+        <tr><td>Gradient all-reduce</td><td>Communication. DeMo DCT-compresses the momentum before it is sent, but its transforms are 4.76e-06 of a step's FLOPs: the saving is in bytes, the subject of <a href="https://brendanjameslynskey.github.io/FOptTrn_03_Optical_Training_Clusters/">deck 03</a> and the Compute in Transit series. That saving has been measured (a 15.8M-parameter GPT on TinyStories, 8 simulated workers): DeMo's fixed DCT band cuts what a worker originates 16&times; against a dense gradient, but the bytes it puts on the wire only 4&times;, because an all-gather's traffic grows with the number of workers and an all-reduce's does not. It costs convergence: final validation loss 3.12&ndash;3.16 for the fixed band against 1.646 for AdamW (<a href="https://compute-in-transit-results.vercel.app/experiment#bytes">CiT results, what each worker sends</a>; <a href="https://brendanjameslynskey.github.io/CiT_04_Fixed_Band_Experiment/">CiT 04</a>)</td></tr>
     </table>
     </div>
     <p>And the hidden costs that apply even where it maps, now per step instead of once: mask rewrites, conversions per value, and the precision a gradient format asks for (<a href="https://brendanjameslynskey.github.io/FOptTrn_02_Optical_Backpropagation/">deck 02</a>).</p>
